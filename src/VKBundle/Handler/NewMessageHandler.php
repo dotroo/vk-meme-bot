@@ -2,28 +2,41 @@
 
 namespace App\VKBundle\Handler;
 
-use App\VKBundle\Client\VkClient;
-use Symfony\Component\HttpFoundation\Request;
+use App\Console\Worker\NewMessageWorker;
+use App\VKBundle\Controller\VkCallbackController;
+use App\VKBundle\Helper\VkObjectValidator;
+use App\VKBundle\Model\BotResponseModel;
+use GearmanClient;
+use Symfony\Component\HttpFoundation\Response;
 
 class NewMessageHandler
 {
-    /**
-     * @var VkClient
-     */
-    private VkClient $apiClient;
+    private const EXPECTED_PARAMS = ['text', 'from_id'];
 
-    /**
-     * @param VkClient $apiClient
-     */
-    public function __construct(VkClient $apiClient)
+    /** @var GearmanClient  */
+    private GearmanClient $gearmanClient;
+
+    public function __construct(GearmanClient $gearmanClient)
     {
-        $this->apiClient = $apiClient;
+        $this->gearmanClient = $gearmanClient;
     }
 
-    public function handle(Request $request): void
+    /**
+     * @param array $body
+     * @param Response $response
+     * @return void
+     */
+    public function handle(array $body, Response $response): void
     {
-        $messages = $this->apiClient->getApiClient()->messages();
+        VkObjectValidator::validateObject(self::EXPECTED_PARAMS, $body);
 
-        $messages->send($this->apiClient->getVkAccessKey(), );
+        $botResponse = BotResponseModel::fromVkObject($body);
+
+        $this->gearmanClient->doBackground(NewMessageWorker::QUEUE_NAME, );
+
+        //$messages = $this->apiClient->getApiClient()->messages();
+        //$messages->send($this->apiClient->getVkAccessKey(), $botResponse->toVkApi());
+
+        $response->setContent(VkCallbackController::VK_OK);
     }
 }

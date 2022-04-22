@@ -6,6 +6,11 @@
 parameters:
     vk_confirmation_string: '%env(VK_CONFIRMATION_STRING)%'
     vk_access_key: '%env(VK_ACCESS_KEY)%'
+    vk_group_id: '%env(VK_GROUP_ID)%'
+    vk_callback_secret_key: '%env(VK_CALLBACK_SECRET_KEY)%'
+    gearman_server: '%env(GEARMAN_SERVER)%'
+    gearman_timeout_client: 30000
+    gearman_timeout_worker: 1000
 
 services:
     # default configuration for services in *this* file
@@ -26,16 +31,24 @@ services:
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
 
+    gearman_client:
+        class: GearmanClient
+        calls:
+            - [ 'addServers',[ "%gearman_server%" ] ]
+            - [ 'setTimeout',[ "%gearman_timeout_client%" ] ]
+
+    GearmanClient: '@gearman_client'
+
     App\VKBundle\Controller\VkCallbackController:
         arguments:
             - '@logger'
-            - '%vk_confirmation_string%'
+            - '%vk_group_id%'
+            - '%vk_callback_secret_key%'
         tags: { name: monolog.logger }
 
     App\VKBundle\Client\VkClient:
-        arguments: ["%vk_access_key%"]
+        arguments: ['%vk_access_key%']
 
-    vk.handler.new_message:
-        class: App\VKBundle\Handler\NewMessageHandler
+    App\VKBundle\Handler\ConfirmationHandler:
         arguments:
-            - '@App\VKBundle\Client\VkClient'
+            - '%vk_confirmation_string%'

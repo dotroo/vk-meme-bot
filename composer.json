@@ -6,6 +6,7 @@
     "require": {
         "php": "^7.4",
         "ext-ctype": "*",
+        "ext-gearman": "^2.0",
         "ext-iconv": "*",
         "ext-json": "*",
         "symfony/console": "5.4.*",
