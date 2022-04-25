@@ -11,6 +11,8 @@ parameters:
     gearman_server: '%env(GEARMAN_SERVER)%'
     gearman_timeout_client: 30000
     gearman_timeout_worker: 1000
+    imgur_client_id: '%env(IMGUR_CLIENT_ID)%'
+    imgur_client_secret: '%env(IMGUR_CLIENT_SECRET)%'
 
 services:
     # default configuration for services in *this* file
@@ -34,10 +36,17 @@ services:
     gearman_client:
         class: GearmanClient
         calls:
-            - [ 'addServers',[ "%gearman_server%" ] ]
+            - [ 'addServer',[ "%gearman_server%" ] ]
             - [ 'setTimeout',[ "%gearman_timeout_client%" ] ]
 
     GearmanClient: '@gearman_client'
+
+    gearman_worker:
+        class: GearmanWorker
+        calls:
+            - [ 'addServer', [ '%gearman_server%' ] ]
+
+    GearmanWorker: '@gearman_worker'
 
     App\VKBundle\Controller\VkCallbackController:
         arguments:
@@ -50,5 +59,9 @@ services:
         arguments: ['%vk_access_key%']
 
     App\VKBundle\Handler\ConfirmationHandler:
+        arguments: ['%vk_confirmation_string%']
+
+    App\ImgurBundle\Client\ImgurApiClient:
         arguments:
-            - '%vk_confirmation_string%'
+            - '%imgur_client_id%'
+            - '%imgur_client_secret%'

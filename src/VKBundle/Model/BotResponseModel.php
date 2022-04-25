@@ -4,21 +4,21 @@ namespace App\VKBundle\Model;
 
 class BotResponseModel
 {
-    private const DEFAULT_REPLY = 'Чтобы получить мем, напиши мне "мем {тематика}"';
+    private const DEFAULT_REPLY = 'Чтобы получить мем, напиши мне "meme {тематика}" (латиницей)';
 
     /**
      * Reply destination
      *
-     * @var int
+     * @var int|null
      */
-    private int $peerId;
+    private ?int $peerId = null;
 
     /**
      * Bot's reply
      *
-     * @var string
+     * @var string|null
      */
-    private string $message = self::DEFAULT_REPLY;
+    private ?string $message = self::DEFAULT_REPLY;
 
     /**
      * Text from the user
@@ -28,8 +28,12 @@ class BotResponseModel
     private string $text;
 
     /**
+     * @var string|null
+     */
+    private ?string $attachment = null;
+
+    /**
      * @param int $peerId
-     * @param string $message
      * @param string $text
      */
     protected function __construct(int $peerId, string $text)
@@ -52,19 +56,35 @@ class BotResponseModel
      */
     public function toVkApi(): array
     {
-        return [
+        $replyParams = [
             'peer_id' => $this->peerId,
             'message' => $this->message,
-            'random_id' => rand(),
+            'attachment' => $this->attachment,
         ];
+
+        $result = array_filter($replyParams, function ($value) {
+            return !is_null($value);
+        });
+
+        $result['random_id'] = rand();
+
+        return $result;
     }
 
     /**
-     * @param string $message
+     * @param string|null $message
      */
-    public function setMessage(string $message): void
+    public function setMessage(?string $message): void
     {
         $this->message = $message;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getMessage(): ?string
+    {
+        return $this->message;
     }
 
     /**
@@ -74,4 +94,29 @@ class BotResponseModel
     {
         return $this->text;
     }
+
+    /**
+     * @param string $attachment
+     */
+    public function setAttachment(string $attachment): void
+    {
+        $this->attachment = $attachment;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getAttachment(): ?string
+    {
+        return $this->attachment;
+    }
+
+    /**
+     * @return int|null
+     */
+    public function getPeerId(): ?int
+    {
+        return $this->peerId;
+    }
+
 }

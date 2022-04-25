@@ -53,7 +53,7 @@ class GearmanCommand extends Command
             ]));
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $startTime = time();
         $task = $input->getOption('task');
@@ -85,12 +85,18 @@ class GearmanCommand extends Command
 
         $maxExecTime = (int)$input->getOption('max_exec_time');
         $io->title('Starting worker ' . $workerName);
-        while ($this->worker->work()) {
-            if ($maxExecTime > 0 && $maxExecTime + $startTime >= time()) {
-                $io->success(sprintf('Stopped worker after %d seconds', $maxExecTime));
-                break;
+
+        try {
+            while ($this->worker->work()) {
+                if ($maxExecTime > 0 && $maxExecTime + $startTime >= time()) {
+                    $io->success(sprintf('Stopped worker after %d seconds', $maxExecTime));
+                    return Command::SUCCESS;
+                }
             }
+        } catch (\Throwable $exception) {
+            $io->writeln($exception->getMessage());
         }
 
+        return Command::SUCCESS;
     }
 }

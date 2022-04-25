@@ -5,7 +5,6 @@ namespace App\VKBundle\Handler;
 use App\Console\Worker\NewMessageWorker;
 use App\VKBundle\Controller\VkCallbackController;
 use App\VKBundle\Helper\VkObjectValidator;
-use App\VKBundle\Model\BotResponseModel;
 use GearmanClient;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -30,12 +29,7 @@ class NewMessageHandler
     {
         VkObjectValidator::validateObject(self::EXPECTED_PARAMS, $body);
 
-        $botResponse = BotResponseModel::fromVkObject($body);
-
-        $this->gearmanClient->doBackground(NewMessageWorker::QUEUE_NAME, );
-
-        //$messages = $this->apiClient->getApiClient()->messages();
-        //$messages->send($this->apiClient->getVkAccessKey(), $botResponse->toVkApi());
+        $this->gearmanClient->doBackground(NewMessageWorker::QUEUE_NAME, json_encode($body));
 
         $response->setContent(VkCallbackController::VK_OK);
     }

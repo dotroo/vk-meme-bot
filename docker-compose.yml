@@ -29,28 +29,48 @@ services:
     networks:
       - vk
 
-  mysql:
-    image: mysql:8.0.21
-    container_name: mysql_vk
-    command: --default-authentication-plugin=mysql_native_password
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: vkpass
-      MYSQL_USER: vkuser
-      MYSQL_PASSWORD: vkpass
-      MYSQL_DATABASE: vkdatabase
-    ports:
-      - "3316:3306"
-    healthcheck:
-      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
-      timeout: 3s
-      retries: 20
-    volumes:
-      - mysql-data:/var/lib/mysql
+  gearman:
+    image: artefactual/gearmand
+    container_name: vk_gearman
+    expose:
+      - 4730
+    networks:
+      - vk
 
-volumes:
-  mysql-data:
-    driver: local
+  workers:
+    image: vk_php_image:latest
+    container_name: vk_workers
+    volumes:
+      - .:/var/www/backend/main
+      - ./docker/supervisor/group_workers.conf:/etc/supervisor/conf.d/group_workers.conf
+    entrypoint: "supervisord -c /etc/supervisor/supervisord.conf -n"
+    env_file:
+      - .env
+    networks:
+      - vk
+
+  #mysql:
+  #  image: mysql:8.0.21
+  #  container_name: mysql_vk
+  #  command: --default-authentication-plugin=mysql_native_password
+  #  restart: always
+  #  environment:
+  #    MYSQL_ROOT_PASSWORD: vkpass
+  #    MYSQL_USER: vkuser
+  #    MYSQL_PASSWORD: vkpass
+  #    MYSQL_DATABASE: vkdatabase
+  #  ports:
+  #    - "3316:3306"
+  #  healthcheck:
+  #    test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
+  #    timeout: 3s
+  #    retries: 20
+  #  volumes:
+  #    - mysql-data:/var/lib/mysql
+
+#volumes:
+#  mysql-data:
+#    driver: local
 
 networks:
   default:

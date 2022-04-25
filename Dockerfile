@@ -82,6 +82,13 @@ RUN apk update && \
     && echo http://dl-cdn.alpinelinux.org/alpine/edge/main >> /etc/apk/repositories   \
     && echo http://dl-cdn.alpinelinux.org/alpine/edge/community >> /etc/apk/repositories    \
     && echo http://dl-cdn.alpinelinux.org/alpine/edge/testing >> /etc/apk/repositories  \
+    && apk update  \
+    && apk add \
+        gearman-dev \
+        gearman-libs  \
+    && (cd /tmp && wget https://github.com/php/pecl-networking-gearman/archive/gearman-2.1.0.zip && unzip gearman-2.1.0.zip && cd pecl-networking-gearman-gearman-2.1.0)  \
+    && docker-php-ext-configure /tmp/pecl-networking-gearman-gearman-2.1.0 && docker-php-ext-install /tmp/pecl-networking-gearman-gearman-2.1.0  \
+    && apk del gearman-dev \
     \
     \
     \
@@ -105,6 +112,9 @@ COPY --from=builder /var/www/backend/main/composer.lock /var/www/backend/main/co
 
 RUN composer dump-autoload \
     && chmod +x ./bin/console
+
+COPY docker/supervisor/supervisord.conf /etc/supervisor/supervisord.conf
+COPY docker/supervisor/group_workers.conf /etc/supervisor/conf.d/group_workers.conf
 
 CMD ["php-fpm"]
 EXPOSE 9000
