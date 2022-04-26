@@ -10,7 +10,7 @@ services:
       - .:/var/www/backend/main
       - ${SSH_AUTH_SOCK}:/ssh-agent
     env_file:
-      - .env
+      - .env.local
     environment:
       - SSH_AUTH_SOCK=/ssh-agent
     networks:
@@ -45,7 +45,7 @@ services:
       - ./docker/supervisor/group_workers.conf:/etc/supervisor/conf.d/group_workers.conf
     entrypoint: "supervisord -c /etc/supervisor/supervisord.conf -n"
     env_file:
-      - .env
+      - .env.local
     networks:
       - vk
 
