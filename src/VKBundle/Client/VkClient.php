@@ -12,6 +12,7 @@ use VK\Exceptions\VKClientException;
 
 class VkClient
 {
+    const VK_API_VERSION = '5.131';
     const METHOD_POST = 'POST';
 
     /** @var VKApiClient  */
@@ -25,7 +26,7 @@ class VkClient
      */
     public function __construct(string $vkAccessKey)
     {
-        $this->apiClient = new VKApiClient();
+        $this->apiClient = new VKApiClient(self::VK_API_VERSION);
         $this->vkAccessKey = $vkAccessKey;
     }
 
@@ -62,24 +63,40 @@ class VkClient
             ['peer_id' => $peerId]
         );
 
-        $file = curl_file_create($filename, 'multipart/form-data');
-        $body = ['photo' => $file];
+        $file = new \CURLFile($filename, 'image/jpeg', $filename . '.jpg');
 
-        $httpClient = new Client();
-        $response = $httpClient->request(
-            self::METHOD_POST,
-            $uploadAddress,
-            [RequestOptions::BODY => json_encode($body)]
+//        $body = ['photo' => $file];
+
+//        $httpClient = new Client();
+//        $response = $httpClient->request(
+//            self::METHOD_POST,
+//            $uploadAddress['upload_url'],
+//            [
+//                RequestOptions::BODY => json_encode($body),
+//                RequestOptions::HEADERS => ['Content-Type' => 'multipart/form-data']
+//            ]
+//        );
+
+//        $vkImage = json_decode($response->getBody()->getContents(), true);
+
+        $ch=curl_init();
+        curl_setopt_array($ch,
+            [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_URL => $uploadAddress['upload_url'],
+                CURLOPT_CUSTOMREQUEST => 'POST',
+                CURLOPT_POSTFIELDS => array("photo" => $file),
+            ]
         );
-
-        $vkImage = json_decode($response->getBody()->getContents(), true);
+        $vkImage = curl_exec($ch);
+        $vkImage = json_decode($vkImage, true);
 
         return $photos->saveMessagesPhoto(
             $this->vkAccessKey,
             [
-                $vkImage['photo'],
-                $vkImage['server'],
-                $vkImage['hash']
+                'photo' => $vkImage['photo'],
+                'server' => $vkImage['server'],
+                'hash' => $vkImage['hash'],
             ]
         );
     }

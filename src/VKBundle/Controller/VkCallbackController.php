@@ -78,7 +78,7 @@ class VkCallbackController
                     break;
                 case CallbackTypeEnum::CALLBACK_TYPE_NEW_MESSAGE:
                     if (!isset($body['object']['action'])) {
-                        $this->newMessageHandler->handle($body['object'], $response);
+                        $this->newMessageHandler->handle($body['object']['message'], $response);
                     } else {
                         $response->setContent(self::VK_OK);
                     }

@@ -16,7 +16,8 @@ class NewMessageWorker implements WorkerInterface
 {
     const QUEUE_NAME = 'new.message';
 
-    const BOT_COMMAND_LENGTH = 3;
+    const COMMUNITY_BOT_COMMAND_LENGTH = 2;
+    const CHAT_BOT_COMMAND_LENGTH = 3;
     const GALLERY_SEARCH_TOP = 'top';
 
     /** @var VkClient  */
@@ -55,23 +56,35 @@ class NewMessageWorker implements WorkerInterface
             $image = null;
             if (!empty($result)) {
                 //returns the first found image
+                shuffle($result);
                 foreach ($result as $item) {
-                    if (!$item['is_album']) {
-                        $image = (array)$item;
-                        $io->writeln('Got an image');
-                        break;
+                    switch ($item['is_album']) {
+                        case true:
+                            $image = reset($item['images']);
+                            break;
+                        case false:
+                            $image = (array)$item;
+                            break;
                     }
+
+                    $io->writeln('Got an image');
+                    $io->writeln(json_encode($image));
+                    break;
                 }
             }
 
             if (!is_null($image)) {
                 try {
                     $vkImage = $this->processImage($image['link'], $botResponse->getPeerId());
-                    $botResponse->setAttachment(sprintf('photo%d_%d', $vkImage['owner_id'], $vkImage['id']));
-                    $botResponse->setMessage(null);
+                    $io->writeln('Image uploaded: ' . json_encode($vkImage, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+                    $botResponse->setAttachment(sprintf('photo%d_%d', $vkImage[0]['owner_id'], $vkImage[0]['id']));
+                    $botResponse->setMessage($image['description']);
                 } catch (\Throwable $e) {
                     $io->error($e->getMessage());
+                    $botResponse->setMessage('Error: ' . $e->getMessage());
                 }
+            } else {
+                $botResponse->setMessage('Мем не найден');
             }
         }
 
@@ -95,8 +108,19 @@ class NewMessageWorker implements WorkerInterface
         $messageParts = explode(' ', $text);
         $intention = null;
 
-        if (strtolower($messageParts[1]) === 'meme' && count($messageParts) === self::BOT_COMMAND_LENGTH) {
-            $intention = $messageParts[2];
+        switch (count($messageParts)) {
+            case self::COMMUNITY_BOT_COMMAND_LENGTH:
+                if (strtolower($messageParts[0]) === 'meme') {
+                    $intention = $messageParts[1];
+                }
+                break;
+            case self::CHAT_BOT_COMMAND_LENGTH:
+                if (strtolower($messageParts[1]) === 'meme') {
+                    $intention = $messageParts[2];
+                }
+                break;
+            default:
+                break;
         }
 
         return $intention;

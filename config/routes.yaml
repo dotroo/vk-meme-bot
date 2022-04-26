@@ -1,6 +1,6 @@
-#index:
-#    path: /
-#    controller: App\Controller\DefaultController::index
+ping:
+    path: /
+    controller: App\Controller\PingController::handle
 
 vk.callback:
     path: /vk/callback
