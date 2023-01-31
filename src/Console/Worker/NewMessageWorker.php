@@ -44,7 +44,7 @@ class NewMessageWorker implements WorkerInterface
 
         $intention = $this->getMessageIntention($botResponse->getText());
 
-        if (!is_null($intention)) {
+        if ($intention !== null) {
             $io->writeln('Recognised intention: ' . $intention);
 
             $client = $this->imgurApiClient->getClient();
@@ -57,23 +57,18 @@ class NewMessageWorker implements WorkerInterface
             if (!empty($result)) {
                 //returns the first found image
                 shuffle($result);
-                foreach ($result as $item) {
-                    switch ($item['is_album']) {
-                        case true:
-                            $image = reset($item['images']);
-                            break;
-                        case false:
-                            $image = (array)$item;
-                            break;
-                    }
+                $item = reset($result);
 
-                    $io->writeln('Got an image');
-                    $io->writeln(json_encode($image));
-                    break;
-                }
+                $isAlbum = (bool)($item['is_album'] ?? false);
+                $isAlbum ? $image = (array)reset($item['images']) : $image = (array)$item;
+
+                $io->writeln('Got an image');
+                $io->writeln(json_encode($image));
             }
 
-            if (!is_null($image)) {
+            if ($image === null) {
+                $botResponse->setMessage('Мем не найден');
+            } else {
                 try {
                     $vkImage = $this->processImage($image['link'], $botResponse->getPeerId());
                     $io->writeln('Image uploaded: ' . json_encode($vkImage, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
@@ -83,8 +78,6 @@ class NewMessageWorker implements WorkerInterface
                     $io->error($e->getMessage());
                     $botResponse->setMessage('Error: ' . $e->getMessage());
                 }
-            } else {
-                $botResponse->setMessage('Мем не найден');
             }
         }
 
@@ -92,7 +85,7 @@ class NewMessageWorker implements WorkerInterface
         $io->writeln('Sending the reply');
         $io->writeln($botResponse->getMessage() ?: $botResponse->getAttachment());
 
-        try{
+        try {
             $messages->send($this->vkApiClient->getVkAccessKey(), $botResponse->toVkApi());
         } catch (VKApiException | VKClientException $e) {
             $io->error($e->getMessage());
@@ -118,8 +111,6 @@ class NewMessageWorker implements WorkerInterface
                 if (strtolower($messageParts[1]) === 'meme') {
                     $intention = $messageParts[2];
                 }
-                break;
-            default:
                 break;
         }
 

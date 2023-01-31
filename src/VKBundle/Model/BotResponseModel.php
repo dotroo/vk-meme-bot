@@ -48,7 +48,7 @@ class BotResponseModel
      */
     public static function fromVkObject(array $object): self
     {
-        return new self($object['peer_id'], $object['text']);
+        return new self((int)$object['peer_id'], (string)$object['text']);
     }
 
     /**
@@ -62,11 +62,9 @@ class BotResponseModel
             'attachment' => $this->attachment,
         ];
 
-        $result = array_filter($replyParams, function ($value) {
-            return !is_null($value);
-        });
+        $result = array_filter($replyParams, static fn ($value) => $value !== null);
 
-        $result['random_id'] = rand();
+        $result['random_id'] = mt_rand();
 
         return $result;
     }
